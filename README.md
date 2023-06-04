@@ -8,4 +8,5 @@ pip install pillow natsort
 You must also download HandBrakeCLI if you want the video compression feature, add it to the System Variable "Path". Replace "NVEC-35.JSON" with your handbrake preset. I recommend using an NVIDIA GPU, but if you don't have an NVIDIA GPU you will need to change the "convert-encode.py" code on line 25.
 But if you don't want to use the video compression feature, change "convert-encode.py" to "convert.py" in the "run.bat" file.
 
+To use this script you need to put the folder and script in the same directory. Then start "run.bat".
 To adjust the image quality and resolution edit the file "convert*.py"
