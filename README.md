@@ -11,3 +11,5 @@ But if you don't want to use the video compression feature, change "convert-enco
 
 To use this script you need to put the folder and script in the same directory. Then start "run.bat".
 To adjust the image quality and resolution edit the file "convert*.py"
+
+Please be careful when using this script, any changes made cannot be undone.
