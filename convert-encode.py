@@ -3,6 +3,8 @@ import shutil
 import subprocess
 from PIL import Image
 from PIL import UnidentifiedImageError
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -23,32 +25,43 @@ def convert_image(image_path, quality, resolution):
         return new_filename
     except UnidentifiedImageError:
         print(f"Unidentified image error: Cannot process image {image_path}")
-        return None
+        return ""
+    except IOError:
+        print(f"IOError: Cannot process image {image_path}")
+        return ""
 
 def compress_video(video_path, preset_file):
     output_filename = video_path.split('.')[0] + "_converted.mp4"
     command = f"HandBrakeCLI -i \"{video_path}\" -o \"{output_filename}\" --preset-import-file \"{preset_file}\" -Z \"H.265 NVEC 720p 35 Quality\" -e nvenc_h265"
-    subprocess.run(command, shell=True)
+
+    process = subprocess.run(command, shell=True, capture_output=True, text=True, encoding='utf-8', errors='ignore')
+    if process.returncode != 0:
+        print(f"HandBrakeCLI command failed for {video_path}. Return code: {process.returncode}, output: {process.stderr}")
+        return ""
     return output_filename
 
 def batch_convert(quality, resolution, preset_file):
-    for foldername in os.listdir(current_dir):
-        folder_path = os.path.join(current_dir, foldername)
-
-        # ensure the path is a directory
-        if os.path.isdir(folder_path):
-            new_folder_path = folder_path + ' [converted]'
-            os.makedirs(new_folder_path, exist_ok=True)
-
-            for filename in os.listdir(folder_path):
-                file_path = os.path.join(folder_path, filename)
-                if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
-                    new_image_path = convert_image(file_path, quality, resolution)
-                    if new_image_path is not None:
-                        os.replace(new_image_path, os.path.join(new_folder_path, filename))
-                elif filename.lower().endswith(('.mp4', '.mov', '.avi', '.mkv')):
-                    new_video_path = compress_video(file_path, preset_file)
-                    os.replace(new_video_path, os.path.join(new_folder_path, filename))
+    for folder_name, _, file_names in os.walk("."):
+        for filename in file_names:
+            file_path = os.path.join(folder_name, filename)
+            if filename.endswith(".mp4"):
+                new_video_path = compress_video(file_path, preset_file)
+                if new_video_path == "":
+                    print(f"Skipping corrupted file: {filename}")
+                    continue
+                new_folder_path = folder_name + " [converted]"
+                if not os.path.exists(new_folder_path):
+                    os.makedirs(new_folder_path)
+                os.replace(new_video_path, os.path.join(new_folder_path, filename))
+            else:
+                new_image_path = convert_image(file_path, quality, resolution)
+                if new_image_path == "":
+                    print(f"Skipping corrupted file: {filename}")
+                    continue
+                new_folder_path = folder_name + " [converted]"
+                if not os.path.exists(new_folder_path):
+                    os.makedirs(new_folder_path)
+                os.replace(new_image_path, os.path.join(new_folder_path, filename))
 
 # Change these values as needed
 quality = 90
