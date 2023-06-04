@@ -6,6 +6,10 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 
 def convert_image(image_path, quality, resolution):
     img = Image.open(image_path)
+    
+    # If the image mode is not 'RGB', convert it to 'RGB'
+    if img.mode != 'RGB':
+        img = img.convert('RGB')
 
     # Preserve Aspect Ratio (height to width ratio of image is preserved)
     img.thumbnail(resolution)
@@ -26,7 +30,7 @@ def batch_convert(quality, resolution):
 
             for filename in os.listdir(folder_path):
                 file_path = os.path.join(folder_path, filename)
-                if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+                if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.webp')):
                     new_image_path = convert_image(file_path, quality, resolution)
                     os.replace(new_image_path, os.path.join(new_folder_path, filename))
                 elif filename.lower().endswith(('.mp4', '.mov', '.avi','.mkv')):

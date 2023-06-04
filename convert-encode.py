@@ -37,7 +37,7 @@ def batch_convert(quality, resolution, preset_file):
 
             for filename in os.listdir(folder_path):
                 file_path = os.path.join(folder_path, filename)
-                if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+                if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.webp')):
                     new_image_path = convert_image(file_path, quality, resolution)
                     os.replace(new_image_path, os.path.join(new_folder_path, filename))
                 elif filename.lower().endswith(('.mp4', '.mov', '.avi', '.mkv', '.webm', '.flv', '.wmv', '.mkv')):
