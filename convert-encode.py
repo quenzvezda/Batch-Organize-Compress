@@ -44,19 +44,20 @@ def batch_convert(quality, resolution, preset_file):
     for folder_name, _, file_names in os.walk("."):
         for filename in file_names:
             file_path = os.path.join(folder_name, filename)
-            if filename.endswith(".mp4"):
+            if filename.endswith(('.mp4', '.mov', '.avi', '.mkv', '.MOV', '.MKV', '.MP4', '.AVI', '.TS', '.ts')):
                 new_video_path = compress_video(file_path, preset_file)
                 if new_video_path == "":
-                    print(f"Skipping corrupted file: {filename}")
+                    print(f"Skipping corrupted file in compress_video: {filename}")
                     continue
                 new_folder_path = folder_name + " [converted]"
                 if not os.path.exists(new_folder_path):
                     os.makedirs(new_folder_path)
                 os.replace(new_video_path, os.path.join(new_folder_path, filename))
+                print(f"Video Compress Success: {filename}")
             else:
                 new_image_path = convert_image(file_path, quality, resolution)
                 if new_image_path == "":
-                    print(f"Skipping corrupted file: {filename}")
+                    print(f"Skipping corrupted file in convert_image: {filename}")
                     continue
                 new_folder_path = folder_name + " [converted]"
                 if not os.path.exists(new_folder_path):
