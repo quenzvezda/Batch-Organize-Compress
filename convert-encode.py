@@ -5,6 +5,10 @@ from PIL import Image
 from PIL import UnidentifiedImageError
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
+import ctypes
+
+kernel32 = ctypes.windll.kernel32
+kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -53,7 +57,7 @@ def batch_convert(quality, resolution, preset_file):
                 if not os.path.exists(new_folder_path):
                     os.makedirs(new_folder_path)
                 os.replace(new_video_path, os.path.join(new_folder_path, filename))
-                print(f"Video Compress Success: {filename}")
+                print(f"\033[92mVideo Compress Success: {filename}\033[0m")
             else:
                 new_image_path = convert_image(file_path, quality, resolution)
                 if new_image_path == "":
