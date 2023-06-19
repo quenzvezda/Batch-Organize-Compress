@@ -49,15 +49,17 @@ def batch_convert(quality, resolution, preset_file):
         for filename in file_names:
             file_path = os.path.join(folder_name, filename)
             if filename.endswith(('.mp4', '.mov', '.avi', '.mkv', '.MOV', '.MKV', '.MP4', '.AVI', '.TS', '.ts')):
+                print(f"\033[36mHandbrake Compress Started: {file_path}\033[0m")
                 new_video_path = compress_video(file_path, preset_file)
+                print(f"\033[92mVideo Compress Success: {file_path}\033[0m")
                 if new_video_path == "":
                     print(f"Skipping corrupted file in compress_video: {filename}")
                     continue
                 new_folder_path = folder_name + " [converted]"
                 if not os.path.exists(new_folder_path):
                     os.makedirs(new_folder_path)
+                    print(f"\033[33mNew Folder Created: {new_folder_path}\033[0m")
                 os.replace(new_video_path, os.path.join(new_folder_path, filename))
-                print(f"\033[92mVideo Compress Success: {filename}\033[0m")
             else:
                 new_image_path = convert_image(file_path, quality, resolution)
                 if new_image_path == "":
@@ -66,6 +68,7 @@ def batch_convert(quality, resolution, preset_file):
                 new_folder_path = folder_name + " [converted]"
                 if not os.path.exists(new_folder_path):
                     os.makedirs(new_folder_path)
+                    print(f"\033[33mNew Folder Created: {new_folder_path}\033[0m")
                 os.replace(new_image_path, os.path.join(new_folder_path, filename))
 
 # Change these values as needed
