@@ -6,6 +6,7 @@ from PIL import UnidentifiedImageError
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 import ctypes
+import winsound
 
 kernel32 = ctypes.windll.kernel32
 kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
@@ -72,7 +73,11 @@ def batch_convert(quality, resolution, preset_file):
                 os.replace(new_image_path, os.path.join(new_folder_path, filename))
 
 # Change these values as needed
-quality = 90
+quality = 80
 resolution = (2000, 2000)
 preset_file = "NVEC-35.json"
 batch_convert(quality, resolution, preset_file)
+
+print(f"All conversion finished, playing sound files now")
+for i in range(10):
+    winsound.PlaySound('Complete.wav', winsound.SND_FILENAME)
