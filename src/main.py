@@ -105,6 +105,11 @@ root.title("Batch Rename and Mover")
 # Dapatkan jalur folder induk dari main.py
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
+# Pastikan folder input dan output ada
+input_folder_path = os.path.join(parent_dir, "input")
+output_folder_path = os.path.join(parent_dir, "output")
+os.makedirs(input_folder_path, exist_ok=True)
+os.makedirs(output_folder_path, exist_ok=True)
 default_input_folder = os.path.join(parent_dir, "input")
 default_output_folder = os.path.join(parent_dir, "output")
 
