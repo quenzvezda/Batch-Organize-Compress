@@ -1,4 +1,4 @@
-# Batch-Organize-Compress
+# Batch-Organize-Compress [Old Project] [No-UI]
 A python script that is useful for organizing the file contents of a folder (especially media files). For example, if you have a lot of files in a subfolder, this script will move them to the parent folder. In addition to organizing, this script also compresses image and video media files, with minimal loss of quality.
 
 To use this script you must install python, and install this library:
