@@ -15,18 +15,19 @@ def convert_image(input_path, output_path, quality, max_resolution):
     try:
         img = Image.open(input_path)
 
-        # Ekstrak metadata EXIF
-        exif_data = img.info.get('exif')
+        # Coba ekstrak metadata EXIF, jika tidak ada, set ke None
+        exif_data = img.info.get('exif', None)
 
-        # Jika mode gambar bukan 'RGB', konversi ke 'RGB'
         if img.mode != 'RGB':
             img = img.convert('RGB')
 
-        # Pertahankan Rasio Aspek
         img.thumbnail(max_resolution)
 
-        # Simpan gambar dengan metadata EXIF
-        img.save(output_path, format='JPEG', quality=quality, optimize=True, exif=exif_data)
+        save_args = {'format': 'JPEG', 'quality': quality, 'optimize': True}
+        if exif_data:
+            save_args['exif'] = exif_data
+
+        img.save(output_path, **save_args)
     except Exception as e:
         print(f"Error processing image {input_path}: {e}")
 

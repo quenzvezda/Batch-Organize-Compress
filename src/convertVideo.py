@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 
 def convert_video(input_path, output_path, preset_file):
     """
@@ -22,9 +23,14 @@ def convert_video(input_path, output_path, preset_file):
         with open(os.devnull, 'w') as devnull:
             subprocess.run(command, check=True, stdout=devnull, stderr=subprocess.STDOUT)
             
-        print(f"Converted: {input_path.encode('utf-8').decode('utf-8')} -> {output_path.encode('utf-8').decode('utf-8')}")
+        # Hanya tampilkan nama file tanpa path lengkap
+        input_file_name = os.path.basename(input_path)
+        output_file_name = os.path.basename(output_path)
+        message = f"Converted: {input_file_name} -> {output_file_name}\n".encode('utf-8')
+        sys.stdout.buffer.write(message)
     except subprocess.CalledProcessError as e:
-        print(f"Error converting video {input_path}: {e}")
+        error_message = f"Error converting video {input_path}: {e}\n".encode('utf-8')
+        sys.stdout.buffer.write(error_message)
 
 def batch_convert_videos(input_folder, output_folder, preset_file):
     """
