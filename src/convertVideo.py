@@ -2,35 +2,71 @@ import os
 import subprocess
 import sys
 
+def extract_metadata(input_path, metadata_file):
+    """
+    Ekstrak metadata "media created" dari video input dan simpan ke file txt.
+    """
+    command = [
+        "ffprobe",
+        "-v", "error",
+        "-select_streams", "v:0",
+        "-show_entries", "stream_tags=creation_time",
+        "-of", "default=nw=1:nk=1",
+        input_path
+    ]
+    with open(metadata_file, "w") as file:
+        subprocess.run(command, stdout=file, check=True)
+
+def apply_metadata(metadata_file, output_video_path):
+    """
+    Terapkan metadata "media created" dari file txt ke video output.
+    """
+    with open(metadata_file, "r") as file:
+        creation_time = file.readline().strip()
+
+    command = [
+        "ffmpeg",
+        "-i", output_video_path,
+        "-c", "copy",
+        "-metadata", f"creation_time={creation_time}",
+        "-y",
+        output_video_path + "_temp.mp4"
+    ]
+    subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+
+    # Ganti nama file sementara ke nama file asli'
+    os.remove(output_video_path)
+    os.rename(output_video_path + "_temp.mp4", output_video_path)
+
 def convert_video(input_path, output_path, preset_file):
     """
-    Konversi video menggunakan HandBrakeCLI dengan preset tertentu.
-
-    :param input_path: Jalur file video input.
-    :param output_path: Jalur file video output.
-    :param preset_file: Jalur file preset untuk HandBrakeCLI.
+    Konversi video menggunakan HandBrakeCLI dengan preset tertentu dan salin metadata.
     """
+    # Tentukan jalur file metadata
+    metadata_file = os.path.splitext(input_path)[0] + ".txt"
+    
     try:
-        # Perintah untuk menjalankan HandBrakeCLI
+        # Ekstrak metadata dari video asli
+        extract_metadata(input_path, metadata_file)
+        
+        # Konversi video menggunakan HandBrakeCLI
         command = [
             "HandBrakeCLI",
             "-i", input_path,
             "-o", output_path,
             "--preset-import-file", preset_file,
         ]
+        subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT) 
         
-        # Jalankan perintah konversi video dan arahkan output ke os.devnull
-        with open(os.devnull, 'w') as devnull:
-            subprocess.run(command, check=True, stdout=devnull, stderr=subprocess.STDOUT)
-            
-        # Hanya tampilkan nama file tanpa path lengkap
-        input_file_name = os.path.basename(input_path)
-        output_file_name = os.path.basename(output_path)
-        message = f"Converted: {input_file_name} -> {output_file_name}\n".encode('utf-8')
-        sys.stdout.buffer.write(message)
+        # Terapkan metadata ke video yang dikonversi
+        apply_metadata(metadata_file, output_path)
+        
+        # Hapus file metadata
+        os.remove(metadata_file)
+        
+        print(f"Converted: {os.path.basename(input_path)} -> {os.path.basename(output_path)}")
     except subprocess.CalledProcessError as e:
-        error_message = f"Error converting video {input_path}: {e}\n".encode('utf-8')
-        sys.stdout.buffer.write(error_message)
+        print(f"Error converting video {input_path}: {e}")
 
 def batch_convert_videos(input_folder, output_folder, preset_file):
     """
