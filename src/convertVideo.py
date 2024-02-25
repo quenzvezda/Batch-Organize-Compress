@@ -17,9 +17,11 @@ def convert_video(input_path, output_path, preset_file):
             "-o", output_path,
             "--preset-import-file", preset_file,
         ]
-
-        # Jalankan perintah konversi video
-        subprocess.run(command, check=True)
+        
+        # Jalankan perintah konversi video dan arahkan output ke os.devnull
+        with open(os.devnull, 'w') as devnull:
+            subprocess.run(command, check=True, stdout=devnull, stderr=subprocess.STDOUT)
+            
         print(f"Converted: {input_path.encode('utf-8').decode('utf-8')} -> {output_path.encode('utf-8').decode('utf-8')}")
     except subprocess.CalledProcessError as e:
         print(f"Error converting video {input_path}: {e}")
