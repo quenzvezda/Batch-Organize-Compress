@@ -6,7 +6,8 @@ import threading
 from tkinter import filedialog
 from move import reorganize_files
 from rename import rename_files
-from convert import batch_convert
+from src.convert import batch_convert_images
+from convert_video import batch_convert_videos
 
 def open_input_folder():
     folder_path = filedialog.askdirectory(initialdir=default_input_folder)
@@ -44,45 +45,31 @@ def process_files():
 
     if convert_var.get() == 1:
         print("Converting files...")
-        converted_folder = os.path.join(parent_dir, "temp") if reorganize_var.get() or rename_var.get() else output_folder
-        batch_convert(input_folder, converted_folder, quality, resolution, preset_file)
-
-        if reorganize_var.get() or rename_var.get():
-            if reorganize_var.get():
-                print("Reorganizing files...")
-                reorganize_files(converted_folder)
-
-            if rename_var.get():
-                print("Renaming files...")
-                rename_files(converted_folder)
-
-            # Pindahkan hasil dari temp folder ke output folder
-            for item in os.listdir(converted_folder):
-                shutil.move(os.path.join(converted_folder, item), output_folder)
-
-            shutil.rmtree(os.path.join(parent_dir, "temp"))
+        converted_folder = os.path.join(parent_dir, "temp")
+        batch_convert_images(input_folder, converted_folder, quality, resolution)
+        batch_convert_videos(input_folder, converted_folder, preset_file)
     else:
-        # Buat folder temp dan salin isi dari input folder ke temp folder
-        temp_folder = os.path.join(parent_dir, "temp")
-        shutil.copytree(input_folder, temp_folder, dirs_exist_ok=True)
+        # Jika tidak ada konversi, salin isi input_folder ke temp_folder
+        converted_folder = os.path.join(parent_dir, "temp")
+        shutil.copytree(input_folder, converted_folder, dirs_exist_ok=True)
 
-        # Jalankan proses berdasarkan pilihan pengguna
-        if reorganize_var.get():
-            print("Reorganizing files...")
-            reorganize_files(temp_folder)
+    if reorganize_var.get():
+        print("Reorganizing files...")
+        reorganize_files(converted_folder)
 
-        if rename_var.get():
-            print("Renaming files...")
-            rename_files(temp_folder)
+    if rename_var.get():
+        print("Renaming files...")
+        rename_files(converted_folder)
 
-        # Pindahkan hasil dari temp folder ke output folder
-        for item in os.listdir(temp_folder):
-            shutil.move(os.path.join(temp_folder, item), output_folder)
+    # Pindahkan hasil dari temp folder ke output folder
+    for item in os.listdir(converted_folder):
+        shutil.move(os.path.join(converted_folder, item), output_folder)
 
-        shutil.rmtree(temp_folder)
+    # Hapus folder temp
+    shutil.rmtree(converted_folder)
 
     print("Processing complete!")
-    
+
     # After Complete
     if play_sound_var.get() == 1:
         sound_repeat = int(sound_repeat_entry.get())

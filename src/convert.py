@@ -1,111 +1,57 @@
-import os
-import shutil
-import subprocess
 from PIL import Image
-from PIL import UnidentifiedImageError
-from PIL import ImageFile
-import ctypes
+import os
 import piexif
 
-kernel32 = ctypes.windll.kernel32
-kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
+def convert_image(input_path, output_path, quality, max_resolution):
+    """
+    Konversi gambar ke format JPG dengan kualitas tertentu, mempertahankan aspek rasio,
+    dan mempertahankan metadata EXIF.
 
-ImageFile.LOAD_TRUNCATED_IMAGES = True
-
-current_dir = os.path.dirname(os.path.abspath(__file__))
-
-import os
-import re
-
-def sanitize_filename(filename):
-    # Menghilangkan spasi di awal nama file
-    filename = filename.lstrip()
-    # Mengganti karakter ilegal dengan underscore
-    filename = re.sub(r'[^a-zA-Z0-9_.-]', '_', filename)
-    return filename
-
-def convert_image(image_path, input_folder, output_folder, quality, resolution):
+    :param input_path: Jalur file gambar input.
+    :param output_path: Jalur file gambar output.
+    :param quality: Kualitas gambar output (0-100).
+    :param max_resolution: Resolusi maksimum gambar output (lebar atau tinggi maksimum).
+    """
     try:
-        img = Image.open(image_path)
+        img = Image.open(input_path)
+
+        # Ekstrak metadata EXIF
+        exif_data = img.info.get('exif')
 
         # Jika mode gambar bukan 'RGB', konversi ke 'RGB'
         if img.mode != 'RGB':
             img = img.convert('RGB')
 
         # Pertahankan Rasio Aspek
-        img.thumbnail(resolution)
+        img.thumbnail(max_resolution)
 
-        # Tentukan lokasi folder tujuan berdasarkan struktur folder asli
-        relative_path = os.path.relpath(os.path.dirname(image_path), input_folder)
-        destination_folder = os.path.join(output_folder, relative_path)
-        os.makedirs(destination_folder, exist_ok=True)
+        # Simpan gambar dengan metadata EXIF
+        img.save(output_path, format='JPEG', quality=quality, optimize=True, exif=exif_data)
+    except Exception as e:
+        print(f"Error processing image {input_path}: {e}")
 
-        # Nama file baru untuk gambar yang dikonversi
-        new_filename = os.path.join(destination_folder, os.path.splitext(os.path.basename(image_path))[0] + ".jpg")
+def batch_convert_images(input_folder, output_folder, quality, max_resolution):
+    """
+    Konversi semua gambar dalam folder input ke folder output, termasuk subfolder,
+    sambil mempertahankan aspect ratio.
 
-        # Coba baca metadata EXIF dari gambar asli
-        try:
-            exif_data = piexif.load(img.info['exif'])
-            # Konversi metadata EXIF kembali ke format binary
-            exif_bytes = piexif.dump(exif_data)
-            # Simpan gambar dengan kualitas yang berkurang dan metadata EXIF
-            img.save(new_filename, "JPEG", optimize=True, quality=quality, exif=exif_bytes)
-        except KeyError:
-            # Jika tidak ada data EXIF, simpan gambar tanpa metadata EXIF
-            img.save(new_filename, "JPEG", optimize=True, quality=quality)
+    :param input_folder: Jalur folder input yang berisi gambar.
+    :param output_folder: Jalur folder output untuk menyimpan gambar yang dikonversi.
+    :param quality: Kualitas gambar output (0-100).
+    :param max_resolution: Resolusi maksimum gambar output (lebar atau tinggi).
+    """
+    for root, dirs, files in os.walk(input_folder):
+        # Tentukan jalur folder output yang sesuai dengan struktur folder input
+        relative_path = os.path.relpath(root, input_folder)
+        current_output_folder = os.path.join(output_folder, relative_path)
+        os.makedirs(current_output_folder, exist_ok=True)
 
-        return new_filename
-    except UnidentifiedImageError:
-        print(f"Unidentified image error: Cannot process image {image_path}")
-        return ""
-    except IOError:
-        print(f"IOError: Cannot process image {image_path}")
-        return ""
+        # Iterasi semua file dalam folder saat ini
+        for file_name in files:
+            input_path = os.path.join(root, file_name)
+            output_path = os.path.join(current_output_folder, os.path.splitext(file_name)[0] + '.jpg')
 
-
-def compress_video(video_path, input_folder, output_folder, preset_file):
-    output_filename = os.path.basename(video_path).split('.')[0] + ".mp4"
-    metadata_filename = os.path.join(os.path.dirname(video_path), os.path.basename(video_path).split('.')[0] + "_metadata.txt")
-
-    # Ekstrak metadata dari video asli
-    subprocess.run(f"ffmpeg -i \"{video_path}\" -map_metadata 0 -f ffmetadata \"{metadata_filename}\"", shell=True, capture_output=True)
-
-    # Kompresi video menggunakan HandBrakeCLI
-    command = f"HandBrakeCLI -i \"{video_path}\" -o \"{output_filename}\" --preset-import-file \"{preset_file}\" -Z \"H.265 NVEC 720p 35 Quality\" -e nvenc_h265"
-    process = subprocess.run(command, shell=True, capture_output=True, text=True, encoding='utf-8', errors='ignore')
-    if process.returncode != 0:
-        print(f"HandBrakeCLI command failed for {video_path}. Return code: {process.returncode}, output: {process.stderr}")
-        return ""
-
-    # Tambahkan kembali metadata ke video yang dikompresi
-    subprocess.run(f"ffmpeg -i \"{output_filename}\" -i \"{metadata_filename}\" -map_metadata 1 -codec copy \"{output_filename}.mp4\"", shell=True, capture_output=True)
-
-    # Hapus file metadata sementara dan sementara output file
-    os.remove(metadata_filename)
-    os.remove(output_filename)
-
-    # Menentukan lokasi output berdasarkan struktur asli
-    relative_path = os.path.relpath(os.path.dirname(video_path), input_folder)
-    destination_folder = os.path.join(output_folder, relative_path)
-    os.makedirs(destination_folder, exist_ok=True)
-    final_output_filename = os.path.join(destination_folder, os.path.basename(video_path).split('.')[0] + "_converted_with_metadata.mp4")
-
-    # Pindahkan file video yang sudah dikonversi
-    shutil.move(output_filename + "_with_metadata.mp4", final_output_filename)
-
-    return final_output_filename
-
-def batch_convert(input_folder, output_folder, quality, resolution, preset_file):
-    for folder_name, _, file_names in os.walk(input_folder):
-        for filename in file_names:
-            file_path = os.path.join(folder_name, filename)
-            if filename.endswith(('.mp4', '.mov', '.avi', '.mkv', '.MOV', '.MKV', '.MP4', '.AVI', '.TS', '.ts', '.m4v', '.M4V')):
-                # Perhatikan penambahan input_folder sebagai parameter
-                new_video_path = compress_video(file_path, input_folder, output_folder, preset_file)
-                if new_video_path != "":
-                    pass
-            else:
-                # Perhatikan penambahan input_folder sebagai parameter
-                new_image_path = convert_image(file_path, input_folder, output_folder, quality, resolution)
-                if new_image_path != "":
-                    pass
+            # Konversi gambar jika file merupakan file gambar
+            if file_name.lower().endswith(('.png', '.jpeg', '.jpg', '.bmp', '.gif')):
+                convert_image(input_path, output_path, quality, max_resolution)
+                print(f'Converted: {file_name} -> {os.path.basename(output_path)}')
