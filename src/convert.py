@@ -15,29 +15,32 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
+import os
+import re
+
+def sanitize_filename(filename):
+    # Menghilangkan spasi di awal nama file
+    filename = filename.lstrip()
+    # Mengganti karakter ilegal dengan underscore
+    filename = re.sub(r'[^a-zA-Z0-9_.-]', '_', filename)
+    return filename
+
 def convert_image(image_path, quality, resolution):
     try:
         img = Image.open(image_path)
-
-        # Jika mode gambar bukan 'RGB', konversi ke 'RGB'
         if img.mode != 'RGB':
             img = img.convert('RGB')
-
-        # Pertahankan Rasio Aspek
         img.thumbnail(resolution)
+        
+        # Membersihkan nama file
+        sanitized_filename = sanitize_filename(os.path.basename(image_path))
+        new_filename = os.path.join(os.path.dirname(image_path), sanitized_filename.split('.')[0] + "_converted.jpg")
 
-        # Nama file baru untuk gambar yang dikonversi
-        new_filename = image_path.split('.')[0] + "_converted.jpg"
-
-        # Coba baca metadata EXIF dari gambar asli
         try:
             exif_data = piexif.load(img.info['exif'])
-            # Konversi metadata EXIF kembali ke format binary
             exif_bytes = piexif.dump(exif_data)
-            # Simpan gambar dengan kualitas yang berkurang dan metadata EXIF
             img.save(new_filename, "JPEG", optimize=True, quality=quality, exif=exif_bytes)
         except KeyError:
-            # Jika tidak ada data EXIF, simpan gambar tanpa metadata EXIF
             img.save(new_filename, "JPEG", optimize=True, quality=quality)
 
         return new_filename
@@ -47,23 +50,28 @@ def convert_image(image_path, quality, resolution):
     except IOError:
         print(f"IOError: Cannot process image {image_path}")
         return ""
+    except Exception as e:
+        print(f"Error: {e} - Cannot process image {image_path}")
+        return ""
 
 def compress_video(video_path, preset_file):
     output_filename = video_path.split('.')[0] + "_converted.mp4"
     metadata_filename = video_path.split('.')[0] + "_metadata.txt"
 
     # Ekstrak metadata dari video asli
-    subprocess.run(f"ffmpeg -i \"{video_path}\" -map_metadata 0 -f ffmetadata \"{metadata_filename}\"", shell=True, capture_output=True)
+    subprocess.run(f"ffmpeg -i \"{video_path}\" -map_metadata 0 -f ffmetadata \"{metadata_filename}\"", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # Kompresi video menggunakan HandBrakeCLI
     command = f"HandBrakeCLI -i \"{video_path}\" -o \"{output_filename}\" --preset-import-file \"{preset_file}\" -Z \"H.265 NVEC 720p 35 Quality\" -e nvenc_h265"
-    process = subprocess.run(command, shell=True, capture_output=True, text=True, encoding='utf-8', errors='ignore')
+    process = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='ignore')
+    print(process.stdout)  # Cetak output dari HandBrakeCLI
+
     if process.returncode != 0:
         print(f"HandBrakeCLI command failed for {video_path}. Return code: {process.returncode}, output: {process.stderr}")
         return ""
 
     # Tambahkan kembali metadata ke video yang dikompresi
-    subprocess.run(f"ffmpeg -i \"{output_filename}\" -i \"{metadata_filename}\" -map_metadata 1 -codec copy \"{output_filename}_with_metadata.mp4\"", shell=True, capture_output=True)
+    subprocess.run(f"ffmpeg -i \"{output_filename}\" -i \"{metadata_filename}\" -map_metadata 1 -codec copy \"{output_filename}_with_metadata.mp4\"", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # Hapus file metadata sementara
     os.remove(metadata_filename)
