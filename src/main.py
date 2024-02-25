@@ -11,14 +11,14 @@ from convertVideo import batch_convert_videos
 import json
 
 def open_input_folder():
-    folder_path = filedialog.askdirectory(initialdir=default_input_folder)
+    folder_path = filedialog.askdirectory(initialdir=input_folder_path)
     if folder_path:  # Periksa apakah pengguna tidak membatalkan dialog
         normalized_path = os.path.normpath(folder_path)
         input_folder_entry.delete(0, tk.END)
         input_folder_entry.insert(0, normalized_path)
 
 def open_output_folder():
-    folder_path = filedialog.askdirectory(initialdir=default_output_folder)
+    folder_path = filedialog.askdirectory(initialdir=output_folder_path)
     if folder_path:  # Periksa apakah pengguna tidak membatalkan dialog
         normalized_path = os.path.normpath(folder_path)
         output_folder_entry.delete(0, tk.END)
@@ -42,13 +42,13 @@ def update_preset_default(preset_path):
         json.dump(data, file, indent=4)
         
 def open_input_folder():
-    folder_path = filedialog.askdirectory(initialdir=default_input_folder)
+    folder_path = filedialog.askdirectory(initialdir=input_folder_path)
     if folder_path:
         input_folder_entry.delete(0, tk.END)
         input_folder_entry.insert(0, folder_path)
 
 def open_output_folder():
-    folder_path = filedialog.askdirectory(initialdir=default_output_folder)
+    folder_path = filedialog.askdirectory(initialdir=output_folder_path)
     if folder_path:
         output_folder_entry.delete(0, tk.END)
         output_folder_entry.insert(0, folder_path)
@@ -130,10 +130,6 @@ input_folder_path = os.path.join(parent_dir, "input")
 output_folder_path = os.path.join(parent_dir, "output")
 os.makedirs(input_folder_path, exist_ok=True)
 os.makedirs(output_folder_path, exist_ok=True)
-default_input_folder = os.path.join(parent_dir, "input")
-default_output_folder = os.path.join(parent_dir, "output")
-print(input_folder_path)
-print(default_input_folder)
 
 # Frame untuk Input, Output, dan Preset File
 folder_frame = tk.Frame(root)
@@ -142,14 +138,14 @@ folder_frame.grid(row=0, column=0, columnspan=4, pady=(0, 10))
 tk.Label(folder_frame, text="Input Folder:").grid(row=0, column=0)
 input_folder_entry = tk.Entry(folder_frame, width=50)
 input_folder_entry.grid(row=0, column=1)
-input_folder_entry.insert(0, default_input_folder)
+input_folder_entry.insert(0, input_folder_path)
 tk.Button(folder_frame, text="Browse", command=open_input_folder).grid(row=0, column=2)
 tk.Button(folder_frame, text="Open", command=lambda: explore_folder(input_folder_entry.get())).grid(row=0, column=3)
 
 tk.Label(folder_frame, text="Output Folder:").grid(row=1, column=0)
 output_folder_entry = tk.Entry(folder_frame, width=50)
 output_folder_entry.grid(row=1, column=1)
-output_folder_entry.insert(0, default_output_folder)
+output_folder_entry.insert(0, output_folder_path)
 tk.Button(folder_frame, text="Browse", command=open_output_folder).grid(row=1, column=2)
 tk.Button(folder_frame, text="Open", command=lambda: explore_folder(output_folder_entry.get())).grid(row=1, column=3)
 
@@ -161,7 +157,7 @@ tk.Button(folder_frame, text="Browse", command=open_preset_file).grid(row=2, col
 
 # Frame untuk Checkboxes
 checkbox_frame = tk.Frame(root)
-checkbox_frame.grid(row=1, column=0, columnspan=3, pady=(10, 10))
+checkbox_frame.grid(row=1, column=0, columnspan=4, pady=(10, 10))
 
 reorganize_var = tk.IntVar(value=1)
 rename_var = tk.IntVar(value=1)
@@ -173,7 +169,7 @@ tk.Checkbutton(checkbox_frame, text="Convert", variable=convert_var).grid(row=0,
 
 # Frame untuk Quality dan Resolution
 settings_frame = tk.Frame(root)
-settings_frame.grid(row=2, column=0, columnspan=3, pady=(0, 10))
+settings_frame.grid(row=2, column=0, columnspan=4, pady=(0, 10))
 
 tk.Label(settings_frame, text="Quality (0-100):").grid(row=0, column=0)
 quality_entry = tk.Entry(settings_frame)
@@ -197,7 +193,7 @@ shutdown_var = tk.IntVar(value=0)    # Default tidak terceklis
 
 # Frame untuk Play Sound dan Shutdown
 options_frame = tk.Frame(root)
-options_frame.grid(row=3, column=0, columnspan=3, pady=(0, 10))
+options_frame.grid(row=3, column=0, columnspan=4, pady=(0, 10))
 
 tk.Checkbutton(options_frame, text="Play Sound When Finish", variable=play_sound_var).grid(row=0, column=0, padx=5, sticky='W')
 sound_repeat_entry = tk.Entry(options_frame, width=5)
@@ -217,7 +213,7 @@ start_processing_button.grid(row=4, column=1, pady=(10, 10), sticky="ew")
 
 # Tombol Cancel Shutdown
 cancel_shutdown_button = tk.Button(root, text="Cancel Shutdown", command=cancel_shutdown)
-cancel_shutdown_button.grid(row=4, column=2, pady=(10, 10), sticky="ew")
+cancel_shutdown_button.grid(row=5, column=1, pady=(10, 10), sticky="ew")
 cancel_shutdown_button.grid_remove()  # Sembunyikan tombol pada awalnya
 
 root.mainloop()
