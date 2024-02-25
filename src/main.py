@@ -7,7 +7,8 @@ from tkinter import filedialog
 from move import reorganize_files
 from rename import rename_files
 from src.convert import batch_convert_images
-from convert_video import batch_convert_videos
+from convertVideo import batch_convert_videos
+import json
 
 def open_input_folder():
     folder_path = filedialog.askdirectory(initialdir=default_input_folder)
@@ -29,6 +30,16 @@ def open_preset_file():
         normalized_path = os.path.normpath(file_path)
         preset_file_entry.delete(0, tk.END)
         preset_file_entry.insert(0, normalized_path)
+        update_preset_default(normalized_path)
+        
+def update_preset_default(preset_path):
+    with open(preset_path, 'r') as file:
+        data = json.load(file)
+        for preset in data.get("PresetList", []):
+            preset["Default"] = True
+
+    with open(preset_path, 'w') as file:
+        json.dump(data, file, indent=4)
         
 def cancel_shutdown():
     os.system("shutdown -a")

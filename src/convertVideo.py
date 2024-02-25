@@ -16,7 +16,6 @@ def convert_video(input_path, output_path, preset_file):
             "-i", input_path,
             "-o", output_path,
             "--preset-import-file", preset_file,
-            "-Z", "H.265 NVEC 720p 35 Quality"
         ]
 
         # Jalankan perintah konversi video
