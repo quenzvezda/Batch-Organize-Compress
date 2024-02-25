@@ -41,6 +41,27 @@ def update_preset_default(preset_path):
     with open(preset_path, 'w') as file:
         json.dump(data, file, indent=4)
         
+def open_input_folder():
+    folder_path = filedialog.askdirectory(initialdir=default_input_folder)
+    if folder_path:
+        input_folder_entry.delete(0, tk.END)
+        input_folder_entry.insert(0, folder_path)
+
+def open_output_folder():
+    folder_path = filedialog.askdirectory(initialdir=default_output_folder)
+    if folder_path:
+        output_folder_entry.delete(0, tk.END)
+        output_folder_entry.insert(0, folder_path)
+
+def open_preset_file():
+    file_path = filedialog.askopenfilename(initialdir=os.path.join(parent_dir, "config"), filetypes=[("JSON files", "*.json")])
+    if file_path:
+        preset_file_entry.delete(0, tk.END)
+        preset_file_entry.insert(0, file_path)
+
+def explore_folder(path):
+    os.startfile(path)
+        
 def cancel_shutdown():
     os.system("shutdown -a")
     cancel_shutdown_button.grid_remove()  # Sembunyikan tombol Cancel Shutdown
@@ -111,22 +132,26 @@ os.makedirs(input_folder_path, exist_ok=True)
 os.makedirs(output_folder_path, exist_ok=True)
 default_input_folder = os.path.join(parent_dir, "input")
 default_output_folder = os.path.join(parent_dir, "output")
+print(input_folder_path)
+print(default_input_folder)
 
 # Frame untuk Input, Output, dan Preset File
 folder_frame = tk.Frame(root)
-folder_frame.grid(row=0, column=0, columnspan=3, pady=(0, 10))
+folder_frame.grid(row=0, column=0, columnspan=4, pady=(0, 10))
 
 tk.Label(folder_frame, text="Input Folder:").grid(row=0, column=0)
 input_folder_entry = tk.Entry(folder_frame, width=50)
 input_folder_entry.grid(row=0, column=1)
 input_folder_entry.insert(0, default_input_folder)
 tk.Button(folder_frame, text="Browse", command=open_input_folder).grid(row=0, column=2)
+tk.Button(folder_frame, text="Open", command=lambda: explore_folder(input_folder_entry.get())).grid(row=0, column=3)
 
 tk.Label(folder_frame, text="Output Folder:").grid(row=1, column=0)
 output_folder_entry = tk.Entry(folder_frame, width=50)
 output_folder_entry.grid(row=1, column=1)
 output_folder_entry.insert(0, default_output_folder)
 tk.Button(folder_frame, text="Browse", command=open_output_folder).grid(row=1, column=2)
+tk.Button(folder_frame, text="Open", command=lambda: explore_folder(output_folder_entry.get())).grid(row=1, column=3)
 
 tk.Label(folder_frame, text="Preset File:").grid(row=2, column=0)
 preset_file_entry = tk.Entry(folder_frame, width=50)
