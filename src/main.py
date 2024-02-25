@@ -55,9 +55,10 @@ def process_files():
     preset_file = preset_file_entry.get()
 
     if convert_var.get() == 1:
-        print("Converting files...")
+        print("Converting images...")
         converted_folder = os.path.join(parent_dir, "temp")
         batch_convert_images(input_folder, converted_folder, quality, resolution)
+        print("Converting videos...")
         batch_convert_videos(input_folder, converted_folder, preset_file)
     else:
         # Jika tidak ada konversi, salin isi input_folder ke temp_folder
