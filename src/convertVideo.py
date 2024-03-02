@@ -76,17 +76,15 @@ def batch_convert_videos(input_folder, output_folder, preset_file):
     :param output_folder: Jalur folder output untuk menyimpan video yang dikonversi.
     :param preset_file: Jalur file preset untuk HandBrakeCLI.
     """
-    for root, dirs, files in os.walk(input_folder):
-        # Tentukan jalur folder output yang sesuai dengan struktur folder input
-        relative_path = os.path.relpath(root, input_folder)
+    video_files = [os.path.join(r, file) for r, d, files in os.walk(input_folder) for file in files if file.lower().endswith(('.mp4', '.avi', '.mov', '.mkv'))]
+    total_videos = len(video_files)
+    converted_videos = 0
+    for input_path in video_files:
+        converted_videos += 1
+        relative_path = os.path.relpath(os.path.dirname(input_path), input_folder)
         current_output_folder = os.path.join(output_folder, relative_path)
         os.makedirs(current_output_folder, exist_ok=True)
-
-        # Iterasi semua file dalam folder saat ini
-        for file_name in files:
-            input_path = os.path.join(root, file_name)
-            output_path = os.path.join(current_output_folder, os.path.splitext(file_name)[0] + '.mp4')
-
-            # Konversi video jika file merupakan file video
-            if file_name.lower().endswith(('.mp4', '.avi', '.mov', '.mkv')):
-                convert_video(input_path, output_path, preset_file)
+        file_name = os.path.basename(input_path)
+        output_path = os.path.join(current_output_folder, os.path.splitext(file_name)[0] + '.mp4')
+        convert_video(input_path, output_path, preset_file)
+        print(f'Converted videos {converted_videos} of {total_videos} videos: {file_name} -> {os.path.basename(output_path)}')

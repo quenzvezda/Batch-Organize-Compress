@@ -41,18 +41,15 @@ def batch_convert_images(input_folder, output_folder, quality, max_resolution):
     :param quality: Kualitas gambar output (0-100).
     :param max_resolution: Resolusi maksimum gambar output (lebar atau tinggi).
     """
-    for root, dirs, files in os.walk(input_folder):
-        # Tentukan jalur folder output yang sesuai dengan struktur folder input
-        relative_path = os.path.relpath(root, input_folder)
+    image_files = [os.path.join(r, file) for r, d, files in os.walk(input_folder) for file in files if file.lower().endswith(('.png', '.jpeg', '.jpg', '.bmp', '.gif'))]
+    total_images = len(image_files)
+    converted_images = 0
+    for input_path in image_files:
+        converted_images += 1
+        relative_path = os.path.relpath(os.path.dirname(input_path), input_folder)
         current_output_folder = os.path.join(output_folder, relative_path)
         os.makedirs(current_output_folder, exist_ok=True)
-
-        # Iterasi semua file dalam folder saat ini
-        for file_name in files:
-            input_path = os.path.join(root, file_name)
-            output_path = os.path.join(current_output_folder, os.path.splitext(file_name)[0] + '.jpg')
-
-            # Konversi gambar jika file merupakan file gambar
-            if file_name.lower().endswith(('.png', '.jpeg', '.jpg', '.bmp', '.gif')):
-                convert_image(input_path, output_path, quality, max_resolution)
-                print(f'Converted: {file_name} -> {os.path.basename(output_path)}')
+        file_name = os.path.basename(input_path)
+        output_path = os.path.join(current_output_folder, os.path.splitext(file_name)[0] + '.jpg')
+        convert_image(input_path, output_path, quality, max_resolution)
+        print(f'Converted images {converted_images} of {total_images} images: {file_name} -> {os.path.basename(output_path)}')
