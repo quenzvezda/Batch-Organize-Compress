@@ -87,4 +87,4 @@ def batch_convert_videos(input_folder, output_folder, preset_file):
         file_name = os.path.basename(input_path)
         output_path = os.path.join(current_output_folder, os.path.splitext(file_name)[0] + '.mp4')
         convert_video(input_path, output_path, preset_file)
-        print(f'Converted videos {converted_videos} of {total_videos} videos: {file_name} -> {os.path.basename(output_path)}')
+        print(f'Converted {converted_videos}/{total_videos} videos: {file_name} -> {os.path.basename(output_path)}')

@@ -52,4 +52,4 @@ def batch_convert_images(input_folder, output_folder, quality, max_resolution):
         file_name = os.path.basename(input_path)
         output_path = os.path.join(current_output_folder, os.path.splitext(file_name)[0] + '.jpg')
         convert_image(input_path, output_path, quality, max_resolution)
-        print(f'Converted images {converted_images} of {total_images} images: {file_name} -> {os.path.basename(output_path)}')
+        print(f'Converted {converted_images}/{total_images} images: {file_name} -> {os.path.basename(output_path)}')
