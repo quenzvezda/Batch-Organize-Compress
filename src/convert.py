@@ -1,6 +1,8 @@
 from PIL import Image
 import os
 from file_utils import collect_files, prepare_output_path
+from console import console, print_success, print_error
+from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, MofNCompleteColumn, TimeRemainingColumn
 
 IMAGE_EXTENSIONS = ('.png', '.jpeg', '.jpg', '.bmp', '.gif')
 
@@ -31,7 +33,7 @@ def convert_image(input_path, output_path, quality, max_resolution):
 
         img.save(output_path, **save_args)
     except Exception as e:
-        print(f"Error processing image {input_path}: {e}")
+        print_error(f"Error processing image {input_path}: {e}")
 
 
 def batch_convert_images(input_folder, output_folder, quality, max_resolution):
@@ -47,8 +49,26 @@ def batch_convert_images(input_folder, output_folder, quality, max_resolution):
     image_files = collect_files(input_folder, IMAGE_EXTENSIONS)
     total_images = len(image_files)
 
-    for i, input_path in enumerate(image_files, start=1):
-        output_path = prepare_output_path(input_path, input_folder, output_folder, '.jpg')
-        convert_image(input_path, output_path, quality, max_resolution)
-        file_name = os.path.basename(input_path)
-        print(f'Converted {i}/{total_images} images: {file_name} -> {os.path.basename(output_path)}')
+    if total_images == 0:
+        print_success("No images to convert.")
+        return
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[bold blue]{task.description}"),
+        BarColumn(bar_width=40),
+        MofNCompleteColumn(),
+        TextColumn("•"),
+        TimeRemainingColumn(),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Converting images", total=total_images)
+
+        for input_path in image_files:
+            output_path = prepare_output_path(input_path, input_folder, output_folder, '.jpg')
+            file_name = os.path.basename(input_path)
+            progress.update(task, description=f"Converting [cyan]{file_name}[/cyan]")
+            convert_image(input_path, output_path, quality, max_resolution)
+            progress.update(task, advance=1)
+
+    print_success(f"Converted {total_images} images.")

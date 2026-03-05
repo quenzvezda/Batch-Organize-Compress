@@ -1,5 +1,7 @@
 import os
 from natsort import natsorted
+from console import print_success
+
 
 def rename_files(parent_folder):
     for folder_name in natsorted(os.listdir(parent_folder)):
@@ -13,7 +15,8 @@ def rename_files(parent_folder):
                     new_path = os.path.join(folder_path, new_name)
                     os.rename(file_path, new_path)
                     counter += 1
-    print("File renaming complete!")
+    print_success("Files renamed.")
+
 
 if __name__ == "__main__":
     parent_folder = os.path.dirname(os.path.abspath(__file__))

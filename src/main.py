@@ -1,4 +1,5 @@
 import os
+import time
 import tkinter as tk
 import winsound
 import shutil
@@ -9,6 +10,9 @@ from move import reorganize_files
 from rename import rename_files
 from convert import batch_convert_images
 from convert_video import batch_convert_videos
+from console import console, print_header, print_step, print_success, print_error
+from rich.panel import Panel
+from rich.text import Text
 
 
 class App:
@@ -169,7 +173,20 @@ class App:
         processing_thread = threading.Thread(target=self._process_files)
         processing_thread.start()
 
+    def _count_steps(self):
+        """Count active processing steps based on checkbox state."""
+        steps = 0
+        if self.convert_var.get() == 1:
+            steps += 2  # images + videos
+        if self.reorganize_var.get():
+            steps += 1
+        if self.rename_var.get():
+            steps += 1
+        return steps
+
     def _process_files(self):
+        start_time = time.time()
+
         input_folder = self.input_folder_entry.get()
         output_folder = self.output_folder_entry.get()
         quality = int(self.quality_entry.get())
@@ -179,21 +196,31 @@ class App:
         preset_file = self.preset_file_entry.get()
 
         temp_folder = os.path.join(self.parent_dir, "temp")
+        total_steps = self._count_steps()
+        current_step = 0
+
+        # Header
+        print_header("🚀 Batch Rename and Converter")
 
         if self.convert_var.get() == 1:
-            print("Converting images...")
+            current_step += 1
+            print_step(current_step, total_steps, "Converting images...")
             batch_convert_images(input_folder, temp_folder, quality, resolution)
-            print("Converting videos...")
+
+            current_step += 1
+            print_step(current_step, total_steps, "Converting videos...")
             batch_convert_videos(input_folder, temp_folder, preset_file)
         else:
             shutil.copytree(input_folder, temp_folder, dirs_exist_ok=True)
 
         if self.reorganize_var.get():
-            print("Reorganizing files...")
+            current_step += 1
+            print_step(current_step, total_steps, "Reorganizing files...")
             reorganize_files(temp_folder)
 
         if self.rename_var.get():
-            print("Renaming files...")
+            current_step += 1
+            print_step(current_step, total_steps, "Renaming files...")
             rename_files(temp_folder)
 
         # Move results from temp folder to output folder
@@ -201,7 +228,19 @@ class App:
             shutil.move(os.path.join(temp_folder, item), output_folder)
 
         shutil.rmtree(temp_folder)
-        print("Processing complete!")
+
+        # Summary
+        elapsed = time.time() - start_time
+        minutes, seconds = divmod(int(elapsed), 60)
+        hours, minutes = divmod(minutes, 60)
+        time_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+        summary = Text.assemble(
+            ("✓ Processing complete!\n", "bold green"),
+            (f"  Total time: {time_str}", ""),
+        )
+        console.print()
+        console.print(Panel(summary, border_style="green", padding=(1, 2)))
 
         # Post-processing options
         if self.play_sound_var.get() == 1:
