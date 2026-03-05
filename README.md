@@ -1,41 +1,51 @@
 # Batch Rename and Converter
 
-This project is an application for batch organizing, renaming, and converting image and video files. It uses Python for the backend and Tkinter for the user interface.
+An application for batch organizing, renaming, and converting image and video files.
 
-## Requirements
+## ✨ Features
 
-Before starting, make sure you have the following requirements:
+- **File organization** — Group files into a cleaner folder structure
+- **File renaming** — Batch rename files following a specific pattern
+- **File conversion** — Convert images & videos with adjustable quality and resolution
+- **Audio notification** — Play a sound when processing is complete (optional)
+- **Auto shutdown** — Automatically shut down the computer after processing (optional)
 
-- Python version 3.12 or higher.
-- HandBrakeCLI (can be installed automatically, see below).
+## 📋 Requirements
 
-## Setup
+- Python 3.12 or higher
+- HandBrakeCLI (can be installed automatically, see Setup)
 
-1. **Install Python dependencies**: Run `install.bat` to install the required Python packages.
-2. **Install HandBrakeCLI**: Run `setup_handbrake.bat` to automatically download and configure HandBrakeCLI.
-   - Downloads the official binary from GitHub Releases.
-   - Installs to `%LOCALAPPDATA%\HandBrakeCLI`.
-   - Adds it to your User PATH automatically.
-   - No admin rights required.
+## 🚀 Setup
 
-## How to Use
+1. **Install dependencies** — Run `install.bat`
+2. **Install HandBrakeCLI** — Run `setup_handbrake.bat`
+   - Automatically downloads the official release
+   - Installs & adds to PATH automatically
+   - No admin rights required
 
-1. Open the application by running `start.bat`.
-2. Select the input and output folders.
-3. Set the desired quality and resolution for conversion.
-4. Choose the operations you want to perform: Re-organize, Rename, Convert.
-5. Click "Start Processing" to begin the process.
-6. Optional: Enable "Play Sound When Finish" to get an audio notification after the process is complete.
-7. Optional: Enable "Shutdown When Finish" to automatically shut down the computer after the process is complete.
+## 📖 How to Use
 
-## Features
+1. Launch the application by running `start.bat`
+2. Select the **Input** (source) and **Output** (destination) folders
+3. Set the desired **Quality** and **Resolution** for conversion
+4. Check the operations you want to perform: **Re-organize**, **Rename**, **Convert**
+5. Click **Start Processing**
 
-- **File organization**: Group files into a neater folder structure.
-- **File renaming**: Batch rename files according to a certain pattern.
-- **File conversion**: Convert image and video files to the desired format with adjustable quality and resolution.
-- **Audio notification**: Play a sound after the process is complete (optional).
-- **Automatic shutdown**: Shut down the computer after the process is complete (optional).
+### Additional Options
 
-## Contribution
+| Option | Description |
+|---|---|
+| Play Sound When Finish | Play a notification sound after completion |
+| Shutdown When Finish | Automatically shut down the PC after completion (configurable delay) |
 
-Contributions are always welcome! Please fork this repository and create a pull request with your changes.
+## 🔧 Troubleshooting
+
+| Issue | Solution |
+|---|---|
+| `HandBrakeCLI` not found | Run `setup_handbrake.bat`, then restart your terminal |
+| Module not found error | Run `install.bat` again |
+| Video conversion fails | Make sure the preset JSON file in `config/` is valid |
+
+## 🤝 Contributing
+
+Contributions are always welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for technical details about the project.
