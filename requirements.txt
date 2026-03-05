@@ -2,3 +2,4 @@ pillow
 natsort
 piexif
 rich
+customtkinter

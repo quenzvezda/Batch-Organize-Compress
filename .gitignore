@@ -7,6 +7,7 @@ __pycache__/
 /input
 /output
 /temp
+/logs
 
 # IDE
 .idea

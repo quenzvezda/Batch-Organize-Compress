@@ -3,7 +3,10 @@ from natsort import natsorted
 from console import print_success
 
 
-def rename_files(parent_folder):
+def rename_files(parent_folder, status_callback=None):
+    if status_callback:
+        status_callback("Starting batch rename...")
+
     for folder_name in natsorted(os.listdir(parent_folder)):
         folder_path = os.path.join(parent_folder, folder_name)
         if os.path.isdir(folder_path):
@@ -15,6 +18,9 @@ def rename_files(parent_folder):
                     new_path = os.path.join(folder_path, new_name)
                     os.rename(file_path, new_path)
                     counter += 1
+
+    if status_callback:
+        status_callback("Files renamed.")
     print_success("Files renamed.")
 
 

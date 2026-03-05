@@ -29,18 +29,25 @@ def remove_empty_subfolders(parent_folder):
                 os.rmdir(dir_path)
 
 
-def reorganize_files(input_folder):
+def reorganize_files(input_folder, status_callback=None):
+    if status_callback:
+        status_callback("Scanning folders to reorganize...")
+
     for folder in natsorted(os.listdir(input_folder)):
         folder_path = os.path.join(input_folder, folder)
         if os.path.isdir(folder_path):
             files = get_files_from_subfolders(folder_path)
             move_and_rename_files(folder_path, files)
             remove_empty_subfolders(folder_path)
+
+    if status_callback:
+        status_callback("Files reorganized.")
     print_success("Files reorganized.")
 
 
 if __name__ == "__main__":
     import sys
+
     if len(sys.argv) > 1:
         input_folder = sys.argv[1]
         reorganize_files(input_folder)
