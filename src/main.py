@@ -3,217 +3,219 @@ import tkinter as tk
 import winsound
 import shutil
 import threading
+import json
 from tkinter import filedialog
 from move import reorganize_files
 from rename import rename_files
-from src.convert import batch_convert_images
-from convertVideo import batch_convert_videos
-import json
+from convert import batch_convert_images
+from convert_video import batch_convert_videos
 
-def open_input_folder():
-    folder_path = filedialog.askdirectory(initialdir=input_folder_path)
-    if folder_path:  # Periksa apakah pengguna tidak membatalkan dialog
-        normalized_path = os.path.normpath(folder_path)
-        input_folder_entry.delete(0, tk.END)
-        input_folder_entry.insert(0, normalized_path)
 
-def open_output_folder():
-    folder_path = filedialog.askdirectory(initialdir=output_folder_path)
-    if folder_path:  # Periksa apakah pengguna tidak membatalkan dialog
-        normalized_path = os.path.normpath(folder_path)
-        output_folder_entry.delete(0, tk.END)
-        output_folder_entry.insert(0, normalized_path)
+class App:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Batch Rename and Mover")
 
-def open_preset_file():
-    file_path = filedialog.askopenfilename(initialdir=os.path.join(parent_dir, "config"), filetypes=[("JSON files", "*.json")])
-    if file_path:  # Periksa apakah pengguna tidak membatalkan dialog
-        normalized_path = os.path.normpath(file_path)
-        preset_file_entry.delete(0, tk.END)
-        preset_file_entry.insert(0, normalized_path)
-        update_preset_default(normalized_path)
-        
-def update_preset_default(preset_path):
-    with open(preset_path, 'r') as file:
-        data = json.load(file)
-        for preset in data.get("PresetList", []):
-            preset["Default"] = True
+        # Paths
+        self.current_dir = os.path.dirname(os.path.abspath(__file__))
+        self.parent_dir = os.path.dirname(self.current_dir)
+        self.input_folder_path = os.path.join(self.parent_dir, "input")
+        self.output_folder_path = os.path.join(self.parent_dir, "output")
+        os.makedirs(self.input_folder_path, exist_ok=True)
+        os.makedirs(self.output_folder_path, exist_ok=True)
 
-    with open(preset_path, 'w') as file:
-        json.dump(data, file, indent=4)
-        
-def open_input_folder():
-    folder_path = filedialog.askdirectory(initialdir=input_folder_path)
-    if folder_path:
-        input_folder_entry.delete(0, tk.END)
-        input_folder_entry.insert(0, folder_path)
+        # Variables
+        self.reorganize_var = tk.IntVar(value=1)
+        self.rename_var = tk.IntVar(value=1)
+        self.convert_var = tk.IntVar(value=1)
+        self.play_sound_var = tk.IntVar(value=1)
+        self.shutdown_var = tk.IntVar(value=0)
 
-def open_output_folder():
-    folder_path = filedialog.askdirectory(initialdir=output_folder_path)
-    if folder_path:
-        output_folder_entry.delete(0, tk.END)
-        output_folder_entry.insert(0, folder_path)
+        # Build UI
+        self._build_folder_frame()
+        self._build_checkbox_frame()
+        self._build_settings_frame()
+        self._build_options_frame()
+        self._build_action_buttons()
 
-def open_preset_file():
-    file_path = filedialog.askopenfilename(initialdir=os.path.join(parent_dir, "config"), filetypes=[("JSON files", "*.json")])
-    if file_path:
-        preset_file_entry.delete(0, tk.END)
-        preset_file_entry.insert(0, file_path)
+    # ── UI Construction ──────────────────────────────────────────────
 
-def explore_folder(path):
-    os.startfile(path)
-        
-def cancel_shutdown():
-    os.system("shutdown -a")
-    cancel_shutdown_button.grid_remove()  # Sembunyikan tombol Cancel Shutdown
+    def _build_folder_frame(self):
+        frame = tk.Frame(self.root)
+        frame.grid(row=0, column=0, columnspan=4, pady=(0, 10))
 
-def process_files():
-    input_folder = input_folder_entry.get()
-    output_folder = output_folder_entry.get()
-    quality = int(quality_entry.get())
-    resolution_x = int(resolution_x_entry.get())
-    resolution_y = int(resolution_y_entry.get())
-    resolution = (resolution_x, resolution_y)
-    preset_file = preset_file_entry.get()
+        # Input folder
+        tk.Label(frame, text="Input Folder:").grid(row=0, column=0)
+        self.input_folder_entry = tk.Entry(frame, width=50)
+        self.input_folder_entry.grid(row=0, column=1)
+        self.input_folder_entry.insert(0, self.input_folder_path)
+        tk.Button(frame, text="Browse", command=self._browse_input_folder).grid(row=0, column=2)
+        tk.Button(frame, text="Open", command=lambda: self._explore_folder(self.input_folder_entry.get())).grid(row=0, column=3)
 
-    if convert_var.get() == 1:
-        print("Converting images...")
-        converted_folder = os.path.join(parent_dir, "temp")
-        batch_convert_images(input_folder, converted_folder, quality, resolution)
-        print("Converting videos...")
-        batch_convert_videos(input_folder, converted_folder, preset_file)
-    else:
-        # Jika tidak ada konversi, salin isi input_folder ke temp_folder
-        converted_folder = os.path.join(parent_dir, "temp")
-        shutil.copytree(input_folder, converted_folder, dirs_exist_ok=True)
+        # Output folder
+        tk.Label(frame, text="Output Folder:").grid(row=1, column=0)
+        self.output_folder_entry = tk.Entry(frame, width=50)
+        self.output_folder_entry.grid(row=1, column=1)
+        self.output_folder_entry.insert(0, self.output_folder_path)
+        tk.Button(frame, text="Browse", command=self._browse_output_folder).grid(row=1, column=2)
+        tk.Button(frame, text="Open", command=lambda: self._explore_folder(self.output_folder_entry.get())).grid(row=1, column=3)
 
-    if reorganize_var.get():
-        print("Reorganizing files...")
-        reorganize_files(converted_folder)
+        # Preset file
+        tk.Label(frame, text="Preset File:").grid(row=2, column=0)
+        self.preset_file_entry = tk.Entry(frame, width=50)
+        self.preset_file_entry.grid(row=2, column=1)
+        self.preset_file_entry.insert(0, os.path.join(self.parent_dir, "config", "NVENC 1080p30 35Q.json"))
+        tk.Button(frame, text="Browse", command=self._browse_preset_file).grid(row=2, column=2)
 
-    if rename_var.get():
-        print("Renaming files...")
-        rename_files(converted_folder)
+    def _build_checkbox_frame(self):
+        frame = tk.Frame(self.root)
+        frame.grid(row=1, column=0, columnspan=4, pady=(10, 10))
 
-    # Pindahkan hasil dari temp folder ke output folder
-    for item in os.listdir(converted_folder):
-        shutil.move(os.path.join(converted_folder, item), output_folder)
+        tk.Checkbutton(frame, text="Re-organize", variable=self.reorganize_var).grid(row=0, column=0, padx=5, sticky='W')
+        tk.Checkbutton(frame, text="Rename", variable=self.rename_var).grid(row=0, column=1, padx=5, sticky='W')
+        tk.Checkbutton(frame, text="Convert", variable=self.convert_var).grid(row=0, column=2, padx=5, sticky='W')
 
-    # Hapus folder temp
-    shutil.rmtree(converted_folder)
+    def _build_settings_frame(self):
+        frame = tk.Frame(self.root)
+        frame.grid(row=2, column=0, columnspan=4, pady=(0, 10))
 
-    print("Processing complete!")
+        tk.Label(frame, text="Quality (0-100):").grid(row=0, column=0)
+        self.quality_entry = tk.Entry(frame)
+        self.quality_entry.grid(row=0, column=1)
+        self.quality_entry.insert(0, "80")
 
-    # After Complete
-    if play_sound_var.get() == 1:
-        sound_repeat = int(sound_repeat_entry.get())
-        for _ in range(sound_repeat):
-            winsound.PlaySound(os.path.join(current_dir, 'Complete.wav'), winsound.SND_FILENAME)
+        tk.Label(frame, text="Resolution (Width x Height):").grid(row=1, column=0)
+        self.resolution_x_entry = tk.Entry(frame, width=10)
+        self.resolution_x_entry.grid(row=1, column=1)
+        self.resolution_x_entry.insert(0, "2000")
 
-    if shutdown_var.get() == 1:
-        shutdown_delay = int(shutdown_delay_entry.get()) * 60  # Konversi menit ke detik
-        os.system(f"shutdown /s /t {shutdown_delay}")
-        cancel_shutdown_button.grid(row=4, column=2, pady=(10, 10), sticky="ew")
+        tk.Label(frame, text="x").grid(row=1, column=2)
 
-def start_processing():
-    # Jalankan proses dalam thread terpisah
-    processing_thread = threading.Thread(target=process_files)
-    processing_thread.start()
+        self.resolution_y_entry = tk.Entry(frame, width=10)
+        self.resolution_y_entry.grid(row=1, column=3)
+        self.resolution_y_entry.insert(0, "2000")
 
-root = tk.Tk()
-root.title("Batch Rename and Mover")
+    def _build_options_frame(self):
+        frame = tk.Frame(self.root)
+        frame.grid(row=3, column=0, columnspan=4, pady=(0, 10))
 
-# Dapatkan jalur folder induk dari main.py
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-# Pastikan folder input dan output ada
-input_folder_path = os.path.join(parent_dir, "input")
-output_folder_path = os.path.join(parent_dir, "output")
-os.makedirs(input_folder_path, exist_ok=True)
-os.makedirs(output_folder_path, exist_ok=True)
+        tk.Checkbutton(frame, text="Play Sound When Finish", variable=self.play_sound_var).grid(row=0, column=0, padx=5, sticky='W')
+        self.sound_repeat_entry = tk.Entry(frame, width=5)
+        self.sound_repeat_entry.grid(row=0, column=1)
+        self.sound_repeat_entry.insert(0, "1")
+        tk.Label(frame, text="Times").grid(row=0, column=2)
 
-# Frame untuk Input, Output, dan Preset File
-folder_frame = tk.Frame(root)
-folder_frame.grid(row=0, column=0, columnspan=4, pady=(0, 10))
+        tk.Checkbutton(frame, text="Shutdown When Finish", variable=self.shutdown_var).grid(row=1, column=0, padx=5, sticky='W')
+        self.shutdown_delay_entry = tk.Entry(frame, width=5)
+        self.shutdown_delay_entry.grid(row=1, column=1)
+        self.shutdown_delay_entry.insert(0, "1")
+        tk.Label(frame, text="Minutes Delay").grid(row=1, column=2)
 
-tk.Label(folder_frame, text="Input Folder:").grid(row=0, column=0)
-input_folder_entry = tk.Entry(folder_frame, width=50)
-input_folder_entry.grid(row=0, column=1)
-input_folder_entry.insert(0, input_folder_path)
-tk.Button(folder_frame, text="Browse", command=open_input_folder).grid(row=0, column=2)
-tk.Button(folder_frame, text="Open", command=lambda: explore_folder(input_folder_entry.get())).grid(row=0, column=3)
+    def _build_action_buttons(self):
+        tk.Button(self.root, text="Start Processing", command=self._start_processing).grid(row=4, column=1, pady=(10, 10), sticky="ew")
 
-tk.Label(folder_frame, text="Output Folder:").grid(row=1, column=0)
-output_folder_entry = tk.Entry(folder_frame, width=50)
-output_folder_entry.grid(row=1, column=1)
-output_folder_entry.insert(0, output_folder_path)
-tk.Button(folder_frame, text="Browse", command=open_output_folder).grid(row=1, column=2)
-tk.Button(folder_frame, text="Open", command=lambda: explore_folder(output_folder_entry.get())).grid(row=1, column=3)
+        self.cancel_shutdown_button = tk.Button(self.root, text="Cancel Shutdown", command=self._cancel_shutdown)
+        self.cancel_shutdown_button.grid(row=5, column=1, pady=(10, 10), sticky="ew")
+        self.cancel_shutdown_button.grid_remove()
 
-tk.Label(folder_frame, text="Preset File:").grid(row=2, column=0)
-preset_file_entry = tk.Entry(folder_frame, width=50)
-preset_file_entry.grid(row=2, column=1)
-preset_file_entry.insert(0, os.path.join(parent_dir, "config", "NVEC-35.json"))  # Default value
-tk.Button(folder_frame, text="Browse", command=open_preset_file).grid(row=2, column=2)
+    # ── Browse Dialogs ───────────────────────────────────────────────
 
-# Frame untuk Checkboxes
-checkbox_frame = tk.Frame(root)
-checkbox_frame.grid(row=1, column=0, columnspan=4, pady=(10, 10))
+    def _browse_input_folder(self):
+        folder_path = filedialog.askdirectory(initialdir=self.input_folder_path)
+        if folder_path:
+            normalized_path = os.path.normpath(folder_path)
+            self.input_folder_entry.delete(0, tk.END)
+            self.input_folder_entry.insert(0, normalized_path)
 
-reorganize_var = tk.IntVar(value=1)
-rename_var = tk.IntVar(value=1)
-convert_var = tk.IntVar(value=1)
+    def _browse_output_folder(self):
+        folder_path = filedialog.askdirectory(initialdir=self.output_folder_path)
+        if folder_path:
+            normalized_path = os.path.normpath(folder_path)
+            self.output_folder_entry.delete(0, tk.END)
+            self.output_folder_entry.insert(0, normalized_path)
 
-tk.Checkbutton(checkbox_frame, text="Re-organize", variable=reorganize_var).grid(row=0, column=0, padx=5, sticky='W')
-tk.Checkbutton(checkbox_frame, text="Rename", variable=rename_var).grid(row=0, column=1, padx=5, sticky='W')
-tk.Checkbutton(checkbox_frame, text="Convert", variable=convert_var).grid(row=0, column=2, padx=5, sticky='W')
+    def _browse_preset_file(self):
+        file_path = filedialog.askopenfilename(
+            initialdir=os.path.join(self.parent_dir, "config"),
+            filetypes=[("JSON files", "*.json")]
+        )
+        if file_path:
+            normalized_path = os.path.normpath(file_path)
+            self.preset_file_entry.delete(0, tk.END)
+            self.preset_file_entry.insert(0, normalized_path)
+            self._update_preset_default(normalized_path)
 
-# Frame untuk Quality dan Resolution
-settings_frame = tk.Frame(root)
-settings_frame.grid(row=2, column=0, columnspan=4, pady=(0, 10))
+    # ── Actions ──────────────────────────────────────────────────────
 
-tk.Label(settings_frame, text="Quality (0-100):").grid(row=0, column=0)
-quality_entry = tk.Entry(settings_frame)
-quality_entry.grid(row=0, column=1)
-quality_entry.insert(0, "80")  # Default value
+    @staticmethod
+    def _explore_folder(path):
+        os.startfile(path)
 
-tk.Label(settings_frame, text="Resolution (Width x Height):").grid(row=1, column=0)
-resolution_x_entry = tk.Entry(settings_frame, width=10)
-resolution_x_entry.grid(row=1, column=1)
-resolution_x_entry.insert(0, "2000")  # Default width
+    @staticmethod
+    def _update_preset_default(preset_path):
+        with open(preset_path, 'r') as f:
+            data = json.load(f)
+            for preset in data.get("PresetList", []):
+                preset["Default"] = True
 
-tk.Label(settings_frame, text="x").grid(row=1, column=2)
+        with open(preset_path, 'w') as f:
+            json.dump(data, f, indent=4)
 
-resolution_y_entry = tk.Entry(settings_frame, width=10)
-resolution_y_entry.grid(row=1, column=3)
-resolution_y_entry.insert(0, "2000")  # Default height
+    def _cancel_shutdown(self):
+        os.system("shutdown -a")
+        self.cancel_shutdown_button.grid_remove()
 
-# Di awal file main.py, setelah import
-play_sound_var = tk.IntVar(value=1)  # Default tidak terceklis
-shutdown_var = tk.IntVar(value=0)    # Default tidak terceklis
+    def _start_processing(self):
+        processing_thread = threading.Thread(target=self._process_files)
+        processing_thread.start()
 
-# Frame untuk Play Sound dan Shutdown
-options_frame = tk.Frame(root)
-options_frame.grid(row=3, column=0, columnspan=4, pady=(0, 10))
+    def _process_files(self):
+        input_folder = self.input_folder_entry.get()
+        output_folder = self.output_folder_entry.get()
+        quality = int(self.quality_entry.get())
+        resolution_x = int(self.resolution_x_entry.get())
+        resolution_y = int(self.resolution_y_entry.get())
+        resolution = (resolution_x, resolution_y)
+        preset_file = self.preset_file_entry.get()
 
-tk.Checkbutton(options_frame, text="Play Sound When Finish", variable=play_sound_var).grid(row=0, column=0, padx=5, sticky='W')
-sound_repeat_entry = tk.Entry(options_frame, width=5)
-sound_repeat_entry.grid(row=0, column=1)
-sound_repeat_entry.insert(0, "1")  # Default value
-tk.Label(options_frame, text="Times").grid(row=0, column=2)
+        temp_folder = os.path.join(self.parent_dir, "temp")
 
-tk.Checkbutton(options_frame, text="Shutdown When Finish", variable=shutdown_var).grid(row=1, column=0, padx=5, sticky='W')
-shutdown_delay_entry = tk.Entry(options_frame, width=5)
-shutdown_delay_entry.grid(row=1, column=1)
-shutdown_delay_entry.insert(0, "1")  # Default value (1 menit)
-tk.Label(options_frame, text="Minutes Delay").grid(row=1, column=2)
+        if self.convert_var.get() == 1:
+            print("Converting images...")
+            batch_convert_images(input_folder, temp_folder, quality, resolution)
+            print("Converting videos...")
+            batch_convert_videos(input_folder, temp_folder, preset_file)
+        else:
+            shutil.copytree(input_folder, temp_folder, dirs_exist_ok=True)
 
-# Tombol Proses
-start_processing_button = tk.Button(root, text="Start Processing", command=start_processing)
-start_processing_button.grid(row=4, column=1, pady=(10, 10), sticky="ew")
+        if self.reorganize_var.get():
+            print("Reorganizing files...")
+            reorganize_files(temp_folder)
 
-# Tombol Cancel Shutdown
-cancel_shutdown_button = tk.Button(root, text="Cancel Shutdown", command=cancel_shutdown)
-cancel_shutdown_button.grid(row=5, column=1, pady=(10, 10), sticky="ew")
-cancel_shutdown_button.grid_remove()  # Sembunyikan tombol pada awalnya
+        if self.rename_var.get():
+            print("Renaming files...")
+            rename_files(temp_folder)
 
-root.mainloop()
+        # Move results from temp folder to output folder
+        for item in os.listdir(temp_folder):
+            shutil.move(os.path.join(temp_folder, item), output_folder)
+
+        shutil.rmtree(temp_folder)
+        print("Processing complete!")
+
+        # Post-processing options
+        if self.play_sound_var.get() == 1:
+            sound_repeat = int(self.sound_repeat_entry.get())
+            for _ in range(sound_repeat):
+                winsound.PlaySound(os.path.join(self.current_dir, 'Complete.wav'), winsound.SND_FILENAME)
+
+        if self.shutdown_var.get() == 1:
+            shutdown_delay = int(self.shutdown_delay_entry.get()) * 60
+            os.system(f"shutdown /s /t {shutdown_delay}")
+            self.cancel_shutdown_button.grid(row=4, column=2, pady=(10, 10), sticky="ew")
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    App(root)
+    root.mainloop()
